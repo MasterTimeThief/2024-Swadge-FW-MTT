@@ -71,6 +71,7 @@ doxy_warnings.txt
 version.txt
 plantuml.jar
 swadge_emulator
+swadge_main.bat
 crash-*.txt
 screenshot-*.bmp
 rec-*.csv
