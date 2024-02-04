@@ -134,6 +134,7 @@ static void ddrEnterMode(void)
     // Load all assets
 
     // Load a font
+    loadFont("radiostars.font", &ddr->radio, false);
     loadFont("ibm_vga8.font", &ddr->ibm, false);
 
 	// Load graphics
@@ -141,13 +142,14 @@ static void ddrEnterMode(void)
     loadWsg("ddrArrowMove.wsg", &ddr->arrowMoveWsg, false);
 
     // Load SFX
-    loadSong("Follinesque.sng", &ddr->song1, false);
-    loadSong("Follinesque.sng", &ddr->song2, false);
-    loadSong("Follinesque.sng", &ddr->song3, false);
+    loadSong("Follinesque2.sng", &ddr->song1, false);
+    loadSong("Fauxrio_Kart.sng", &ddr->song2, false);
+    loadSong("gamecube.sng", &ddr->song3, false);
 
     ddr->song1.shouldLoop = false;
     ddr->song2.shouldLoop = false;
     ddr->song3.shouldLoop = false;
+
 
     ddr->usBeatCtr = 0;
     ddr->beats[0] = DDR_ARROW_HEIGHT + (ddr->arrowWsg.h / 2);
@@ -196,6 +198,7 @@ static void ddrExitMode(void)
     deinitMenu(ddr->menu);
     deinitMenuLogbookRenderer(ddr->menuLogbookRenderer);
     // Free the font
+    freeFont(&ddr->radio);
     freeFont(&ddr->ibm);
     // Free graphics
     freeWsg(&ddr->arrowWsg);
@@ -276,6 +279,7 @@ static void ddrGameLoop(int64_t elapsedUs)
     {
         // Decrement the timer and draw the field, but don't run game logic
         ddr->restartTimerUs -= elapsedUs;
+        ddrMoveTrack();
         ddrDrawField();
         return;
     }
@@ -484,11 +488,11 @@ static void ddrDrawField(void)
     int16_t tWidth;
 
     // Render a number to a string
-    snprintf(scoreStr, sizeof(scoreStr) - 1, "%" PRIu8, ddr->score);
+    snprintf(scoreStr, sizeof(scoreStr) - 1, "%05" PRIu8, ddr->score);
     // Measure the width of the score string
-    tWidth = textWidth(&ddr->ibm, scoreStr);
+    tWidth = textWidth(&ddr->radio, scoreStr);
     // Draw the score string to the display, centered at (TFT_WIDTH / 4)
-    drawText(&ddr->ibm, c555, scoreStr, (TFT_WIDTH / 4) - (tWidth / 2), 0);
+    drawText(&ddr->radio, c555, scoreStr, (TFT_WIDTH / 4) - (tWidth / 2), 50);
 
 
 
@@ -496,18 +500,18 @@ static void ddrDrawField(void)
     if (ddr->isPaused)
     {
         // Measure the width of the time string
-        tWidth = textWidth(&ddr->ibm, ddrPaused);
+        tWidth = textWidth(&ddr->radio, ddrPaused);
         // Draw the time string to the display, centered at (TFT_WIDTH / 2)
-        drawText(&ddr->ibm, c555, ddrPaused, ((TFT_WIDTH - tWidth) / 2), 0);
+        drawText(&ddr->radio, c555, ddrPaused, ((TFT_WIDTH - tWidth) / 2), 0);
     }
     else if (ddr->restartTimerUs > 0)
     {
         // Render the time to a string
         snprintf(scoreStr, sizeof(scoreStr) - 1, "%01" PRId32, (ddr->restartTimerUs / ddr->usPerBeat)+1);
         // Measure the width of the time string
-        tWidth = textWidth(&ddr->ibm, scoreStr);
+        tWidth = textWidth(&ddr->radio, scoreStr);
         // Draw the time string to the display, centered at (TFT_WIDTH / 2)
-        drawText(&ddr->ibm, c555, scoreStr, ((TFT_WIDTH - tWidth) / 2), 0);
+        drawText(&ddr->radio, c555, scoreStr, ((TFT_WIDTH - tWidth) / 2), 0);
     }
     
 }
@@ -554,7 +558,7 @@ static void ddrSetupTrack(const char *song)
 			{
 				note_t* n = malloc(sizeof(note_t));
 				n->x = 120+(j*40);
-				n->y = pos;
+				n->y = pos+240;
 				push(ddr->notes, n);
 			}
 
@@ -594,7 +598,14 @@ static int16_t ddrAdvancedUSB(uint8_t* buffer, uint16_t length, uint8_t isGet)
  */
 static void ddrResetGame(bool isInit)
 {
-    
+    if(ddrDebug)
+    {
+        printf("Resetting track \n");
+        if      (ddr->currSong == DDR_SONG_1) printf("Song 1 \n");
+        else if (ddr->currSong == DDR_SONG_2) printf("Song 2 \n");
+        else if (ddr->currSong == DDR_SONG_3) printf("Song 3 \n");
+    }
+
 	// Set different variables based on initialization
     if (isInit)
     {
@@ -605,16 +616,19 @@ static void ddrResetGame(bool isInit)
             {
                 ddrSetupTrack("song1.json");
                 bzrPlayBgm(&ddr->song1, BZR_STEREO);
+                break;
             }
             case DDR_SONG_2:
             {
                 ddrSetupTrack("song2.json");
                 bzrPlayBgm(&ddr->song2, BZR_STEREO);
+                break;
             }
             case DDR_SONG_3:
             {
                 ddrSetupTrack("song3.json");
                 bzrPlayBgm(&ddr->song3, BZR_STEREO);
+                break;
             }
         }
     }

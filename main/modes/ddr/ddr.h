@@ -80,6 +80,7 @@ typedef struct
 {
 	menu_t* menu;                               ///< The menu structure
     menuLogbookRenderer_t* menuLogbookRenderer; ///< Renderer for the menu
+    font_t radio;                                 ///< The font used in the menu and game
     font_t ibm;                                 ///< The font used in the menu and game
     p2pInfo p2p;                                ///< Peer to peer connectivity info, currently unused
     
