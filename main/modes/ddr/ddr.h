@@ -72,8 +72,8 @@ typedef enum
 
 typedef struct 
 {
-	uint8_t x;
-	uint8_t y;
+	int32_t x;
+	int32_t y;
 } note_t;
 
 typedef struct
@@ -85,15 +85,16 @@ typedef struct
     
 	ddrScreen_t screen;		///< The screen being displayed
 	ddrSong_t currSong;		///< The level being played
-    uint8_t bpm;			///< BPM for the current song
+    int32_t bpm;			///< BPM for the current song
 	list_t* notes;
-    int32_t usPerBeat;
-    int32_t usBeatCtr;
-	bool songIsCounting;
+    int32_t usPerBeat;      ///< us per beat
+    int32_t usBeatCtr;      ///< Counts what beat we're on
+
+	bool songCountdown;    ///< Is the song in the opening countdown?
 
 	ddrDifficulty_t difficulty;					///< The difficulty of the track
 
-    uint8_t score;            ///< The score for the game
+    int32_t score;            ///< The score for the game
 
 	int16_t beats[4];			///< y position of beats on track
 

@@ -40,7 +40,6 @@ swadgeMode_t ddrMode = {
 
 bool ddrDebug = true;
 
-
 const char* track1[] = {
     "0100",
     "0000",
@@ -164,7 +163,7 @@ static void ddrEnterMode(void)
     ddr->menu                = initMenu(ddrName, ddrMenuCb);
     ddr->menuLogbookRenderer = initMenuLogbookRenderer(&ddr->ibm);
 
-    // These are the possible control schemes
+    // These are the possible songs
     const char* songList[] = {
         ddrSong1,
         ddrSong2,
@@ -389,7 +388,8 @@ static void ddrBackgroundDrawCallback(int16_t x, int16_t y, int16_t w, int16_t h
  */
 static void ddrDrawField(void)
 {
-    if(ddrDebug) printf("Entered ddrDrawField \n");
+    //if(ddrDebug) printf("Entered ddrDrawField \n");
+
     /*
     // Create an array for all LEDs
     led_t leds[CONFIG_NUM_LEDS];
@@ -406,7 +406,7 @@ static void ddrDrawField(void)
     // No need to clear the display before drawing because it's redrawn by pongBackgroundDrawCallback() each time
 
     
-    if(ddrDebug) printf("Draw lines \n");
+    //if(ddrDebug) printf("Draw lines \n");
     //Draw Track
     drawLineFast(120, ddr->beats[0], 280, ddr->beats[0], c050);
     drawLineFast(120, ddr->beats[1], 280, ddr->beats[1], c555);
@@ -414,11 +414,12 @@ static void ddrDrawField(void)
     drawLineFast(120, ddr->beats[3], 280, ddr->beats[3], c555);
 
 	//Draw ONLY notes that should appear
-	node_t* currentNode = ddr->notes->first;
+	
+    node_t* currentNode = ddr->notes->first;
 	while (currentNode != NULL)
 	{
 		note_t* note = (note_t*)currentNode->val;
-        if(ddrDebug) printf("Note: x:%"PRIu8" y:%"PRIu8" \n", note->x, note->y );
+        //if(ddrDebug) printf("Note: x:%"PRIu8" y:%"PRIu8" \n", note->x, note->y );
 		// Check if note is at top of screen and needs to be removed
 		if (note->y <= 0)
 		{
@@ -428,8 +429,8 @@ static void ddrDrawField(void)
 			continue;
 		}
 
-		// Check if current note is below screen, then stop the loo
-		if (note->y > 240)
+		// Check if current note is below screen, then stop the loop
+		if (note->y >= 240)
 		{
 			break;
 		}
@@ -522,8 +523,10 @@ static void ddrMoveTrack(void)
         }
     }
 
+    //ddr->usBeatCtr += 4;
+
 	//Move all notes
-	node_t* currentNode = ddr->notes->first;
+    node_t* currentNode = ddr->notes->first;
 	while (currentNode != NULL)
 	{
 		// move up note
@@ -538,13 +541,14 @@ static void ddrSetupTrack(const char *song)
 {
     //const char *json = loadJson(song, true);
     //ddr->track = json['track'];
-	uint8_t pos = DDR_ARROW_HEIGHT;
+	int32_t pos = DDR_ARROW_HEIGHT;
+    //ddr->usBeatCtr = 0;
 
 	//Just do track 1 for now, make different tracks later
-    for (uint8_t i = 0; i < ARRAY_SIZE(track1); i++)
+    for (uint16_t i = 0; i < ARRAY_SIZE(track1); i++)
     {
         //check each beat for which notes to add
-		for (uint8_t j = 0; j < 4; j++)
+		for (uint16_t j = 0; j < 4; j++)
 		{
 			if(track1[i][j] == '1')
 			{
@@ -621,6 +625,7 @@ static void ddrResetGame(bool isInit)
 
     // Set the restart timer
     //ddr->restartTimerUs = 2000000;
+    ddr->songCountdown = true;
     ddr->restartTimerUs = ddr->usPerBeat * 4;
 
 
