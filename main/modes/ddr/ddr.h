@@ -23,6 +23,12 @@
 #define DDR_ARROW_HEIGHT 20
 #define DDR_TRACK_SPEED 4
 
+#define DDR_HIT_PERFECT 2
+#define DDR_HIT_GREAT   3
+#define DDR_HIT_GOOD    4
+#define DDR_HIT_OKAY    5
+#define DDR_HIT_BAD     6
+
 //==============================================================================
 // Enums
 //==============================================================================
@@ -88,6 +94,7 @@ typedef struct
 	ddrSong_t currSong;		///< The level being played
     int32_t bpm;			///< BPM for the current song
 	list_t* notes;
+    int16_t notesOnScreen;  ///< How many notes are on screen
     int32_t usPerBeat;      ///< us per beat
     int32_t usBeatCtr;      ///< Counts what beat we're on
 
@@ -136,9 +143,11 @@ static void ddrEspNowRecvCb(const esp_now_recv_info_t* esp_now_info, const uint8
 static void ddrEspNowSendCb(const uint8_t* mac_addr, esp_now_send_status_t status);
 static int16_t ddrAdvancedUSB(uint8_t* buffer, uint16_t length, uint8_t isGet);
 
+static void ddrCheckNoteHit(int16_t xpos);
+static void ddrHandleNoteHit(node_t* node);
 static void ddrResetGame(bool isInit);
 static void ddrMoveTrack(void);
-static void setBPM(uint8_t bpm);
+static void setBPM(int32_t bpm);
 
 //==============================================================================
 // Strings

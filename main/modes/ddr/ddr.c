@@ -262,6 +262,39 @@ static void ddrGameLoop(int64_t elapsedUs)
             // Toggle pause
             ddr->isPaused = !ddr->isPaused;
         }
+
+        //Check if a note was hit
+        if (evt.down)
+        {
+            /*
+            * 120 - LEFT
+            * 160 - DOWN
+            * 200 - UP
+            * 240 - RIGHT
+            */
+            switch(evt.button){
+                case PB_UP:
+                {
+                    ddrCheckNoteHit(200);
+                    break;
+                }
+                case PB_DOWN:
+                {
+                    ddrCheckNoteHit(160);
+                    break;
+                }
+                case PB_LEFT:
+                {
+                    ddrCheckNoteHit(120);
+                    break;
+                }
+                case PB_RIGHT:
+                {
+                    ddrCheckNoteHit(240);
+                    break;
+                }
+            }
+        }
     }
 
     
@@ -285,7 +318,7 @@ static void ddrGameLoop(int64_t elapsedUs)
     }
 
     // Do update each loop
-    ddrMoveTrack();
+
     /*
     pongFadeLeds(elapsedUs);
     pongControlPlayerPaddle();
@@ -295,6 +328,7 @@ static void ddrGameLoop(int64_t elapsedUs)
 
     // Draw the field
     
+    ddrMoveTrack();
     ddrDrawField();
 }
 
@@ -419,6 +453,9 @@ static void ddrDrawField(void)
 
 	//Draw ONLY notes that should appear
 	
+    //Reset counter 
+    ddr->notesOnScreen = 0;
+
     node_t* currentNode = ddr->notes->first;
 	while (currentNode != NULL)
 	{
@@ -450,6 +487,7 @@ static void ddrDrawField(void)
 		// Draw note onscreen
 		//note->y -= DDR_TRACK_SPEED;
 		drawWsg(&ddr->arrowMoveWsg, note->x, note->y, false, false, rot);
+        ddr->notesOnScreen++;
 		currentNode = currentNode->next;
 	}
 
@@ -569,7 +607,7 @@ static void ddrSetupTrack(const char *song)
 
     
 }
- 
+
 static void ddrEspNowRecvCb(const esp_now_recv_info_t* esp_now_info, const uint8_t* data, uint8_t len, int8_t rssi)
 {
     // Fill this in
@@ -590,6 +628,69 @@ static int16_t ddrAdvancedUSB(uint8_t* buffer, uint16_t length, uint8_t isGet)
 
 
 
+/**
+ * @brief When a direction is pressed, checks if a note is close enough to be hit
+ */
+static void ddrCheckNoteHit(int16_t xpos)
+{
+    node_t* currentNode = ddr->notes->first;
+    //note_t note;
+
+    for (uint16_t i = 0; i < ddr->notesOnScreen; i++)
+    {
+        if(currentNode == NULL) break;
+
+        note_t* note = (note_t*)currentNode->val;
+        if(note->x == xpos)
+        {
+            ddrHandleNoteHit(currentNode);
+            break;
+        }
+		currentNode = currentNode->next;
+    }
+}
+
+/**
+ * @brief Handles a note that was hit, adds score, and removes the note
+ *
+ * @param note 
+ * @param index 
+ */
+static void ddrHandleNoteHit(node_t* node)
+{
+    note_t* note = (note_t*)node->val;
+
+    //Add score based on accuracy
+    if(note->y <= DDR_ARROW_HEIGHT + (DDR_HIT_PERFECT * DDR_TRACK_SPEED) && note->y > DDR_ARROW_HEIGHT - (DDR_HIT_PERFECT * DDR_TRACK_SPEED))
+    {
+        ddr->score += 100; //PERFECT Accuracy
+    }
+    else if(note->y <= DDR_ARROW_HEIGHT + (DDR_HIT_GREAT * DDR_TRACK_SPEED) && note->y > DDR_ARROW_HEIGHT - (DDR_HIT_GREAT * DDR_TRACK_SPEED))
+    {
+        ddr->score += 80; //GREAT Accuracy
+    }
+    else if(note->y <= DDR_ARROW_HEIGHT + (DDR_HIT_GOOD * DDR_TRACK_SPEED) && note->y > DDR_ARROW_HEIGHT - (DDR_HIT_GOOD * DDR_TRACK_SPEED))
+    {
+        ddr->score += 60; //GOOD Accuracy
+    }
+    else if(note->y <= DDR_ARROW_HEIGHT + (DDR_HIT_OKAY * DDR_TRACK_SPEED) && note->y > DDR_ARROW_HEIGHT - (DDR_HIT_OKAY * DDR_TRACK_SPEED))
+    {
+        ddr->score += 30; //OKAY Accuracy
+    }
+    else if(note->y <= DDR_ARROW_HEIGHT + (DDR_HIT_BAD * DDR_TRACK_SPEED) && note->y > DDR_ARROW_HEIGHT - (DDR_HIT_BAD * DDR_TRACK_SPEED))
+    {
+        ddr->score += 10; //BAD Accuracy
+    }
+    else
+    {
+        //Note is too far down, do nothing
+        return;
+    }
+
+    //Remove note from list after score is added
+    removeEntry(ddr->notes, node);
+
+}
 
 /**
  * @brief Reset the DDR game variables
@@ -658,7 +759,7 @@ static void ddrResetGame(bool isInit)
 	*/
 }
 
-static void setBPM(uint8_t bpm)
+static void setBPM(int32_t bpm)
 {
     // Figure out how many microseconds are in one beat
     ddr->bpm = bpm;
